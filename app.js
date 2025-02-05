@@ -40,7 +40,7 @@ const Document = mongoose.model("Document", documentSchema);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
+const filePath = path.join(__dirname, 'test', 'data', '05-versions-space.pdf');
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
@@ -336,6 +336,28 @@ function cosineSimilarity(vecA, vecB) {
     const magnitudeB = Math.sqrt(vecB.reduce((sum, val) => sum + val * val, 0));
     return dotProduct / (magnitudeA * magnitudeB);
 }
+
+// Add after your existing routes, before app.listen()
+
+app.get('/test', async (req, res) => {
+    try {
+        const serverInfo = {
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV || 'development',
+            mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+            serverTime: Date.now()
+        };
+        
+        res.json(serverInfo);
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
 
 // Start the server
 const PORT = process.env.PORT || 3000;
