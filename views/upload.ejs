@@ -1,0 +1,49 @@
+<!-- views/upload.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Upload</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h1 class="text-2xl font-bold text-center mb-6">Upload PDF Document</h1>
+        
+        <% if (typeof documentKey !== 'undefined') { %>
+            <div class="mb-6 p-4 bg-green-100 rounded-lg">
+                <p class="text-green-700 text-center">Document uploaded successfully!</p>
+                <p class="text-center mt-2">Your document key is: <strong><%= documentKey %></strong></p>
+                <div class="mt-4 text-center">
+                    <a href="/chat/<%= documentKey %>" 
+                       class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+                        Go to Chat
+                    </a>
+                </div>
+            </div>
+        <% } %>
+        
+        <form action="/upload" method="post" enctype="multipart/form-data" class="space-y-4">
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                <input type="file" 
+                       name="pdf" 
+                       accept=".pdf"
+                       class="w-full text-sm text-gray-500
+                              file:mr-4 file:py-2 file:px-4
+                              file:rounded-full file:border-0
+                              file:text-sm file:font-semibold
+                              file:bg-blue-50 file:text-blue-700
+                              hover:file:bg-blue-100"
+                       required>
+            </div>
+            
+            <button type="submit" 
+                    class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg
+                           hover:bg-blue-600 transition-colors">
+                Upload PDF
+            </button>
+        </form>
+    </div>
+</body>
+</html>
