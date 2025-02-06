@@ -3,13 +3,13 @@ dotenv.config();
 import fetch from 'node-fetch';
 
 import express from "express";
-import multer from "multer";
+
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { OpenAI } from "openai";
 import mongoose from "mongoose";
-import pdfParse from "pdf-parse";
+
 
 console.log("🔄 Initializing MongoDB...");
 
@@ -41,7 +41,7 @@ const Document = mongoose.model("Document", documentSchema);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const filePath = path.join(__dirname, 'test', 'data', '05-versions-space.pdf');
+
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
@@ -49,7 +49,7 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 const app = express();
-const upload = multer({ dest: uploadsDir });
+
 
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -69,82 +69,17 @@ async function getEmbeddings(text) {
     }
 }
 
-// Function to parse PDFs safely
-async function parsePDF(buffer) {
-    try {
-        const data = await pdfParse(buffer);
-        return data.text;
-    } catch (error) {
-        console.error("❌ Error parsing PDF:", error);
-        throw new Error("Failed to parse PDF file.");
-    }
-}
+
+
 
 app.set("view engine", "ejs");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-app.get("/upload", (req, res) => {
-    res.render("upload", { documentKey: undefined });
-});
 
-app.post("/upload", upload.single("pdf"), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).send("No file uploaded.");
-        }
 
-        const filePath = req.file.path;
 
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).send("Uploaded file not found.");
-        }
-
-        const dataBuffer = fs.readFileSync(filePath);
-        const text = await parsePDF(dataBuffer);
-
-        // Split text into smaller chunks
-        const chunks = text.split(/\n\s*\n/).filter(chunk => chunk.trim().length > 0);
-
-        // Generate document ID
-        const documentId = `doc_${Date.now()}`;
-
-        // Process chunks into MongoDB-compatible vectors
-        const vectors = await Promise.all(
-            chunks.map(async (chunk, idx) => {
-                const embedding = await getEmbeddings(chunk);
-                return {
-                    id: `${documentId}_${idx}`,
-                    values: embedding,
-                    metadata: {
-                        text: chunk,
-                        documentId,
-                        fileName: req.file.originalname
-                    }
-                };
-            })
-        );
-
-        // Save the document and its vectors to MongoDB
-        const newDocument = new Document({
-            documentId,
-            fileName: req.file.originalname,
-            vectors
-        });
-        await newDocument.save();
-
-        fs.unlinkSync(filePath); // Clean up file after processing
-
-        res.render("upload", { documentKey:documentId });
-    } catch (error) {
-        console.error("❌ Error in upload process:", error);
-        if (req.file && fs.existsSync(req.file.path)) {
-            fs.unlinkSync(req.file.path);
-        }
-        res.status(500).send(`Error processing PDF: ${error.message}`);
-    }
-});
 
 app.get("/", (req, res) => {
     const documentId ="doc_1738755985255";
