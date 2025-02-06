@@ -54,6 +54,7 @@ const app = express();
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 app.set('views', path.join(__dirname, 'views'));
+app.set('public', path.join(__dirname, 'public'));
 // Function to get embeddings using OpenAI's text-embedding-3-small
 async function getEmbeddings(text) {
     try {
@@ -87,7 +88,7 @@ app.get("/", (req, res) => {
     res.render("chat", { documentKey:documentId, fileName: "PDF Document" });
 });
 
-app.post("/chat/:documentId", async (req, res) => {
+app.post("/chat", async (req, res) => {
     try {
         const { question } = req.body;
         const documentId = "doc_1738755985255";
@@ -152,7 +153,7 @@ app.post("/chat/:documentId", async (req, res) => {
         if (!response.ok) {
             throw new Error(`API request failed with status ${response.status}`);
         }
-
+        console.log('[Chat POST] API Response Status:', response.status);
         const completion = await response.json();
 
         // Adjust response handling for OpenRouter's format

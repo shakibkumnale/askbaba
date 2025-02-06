@@ -183,7 +183,7 @@
             questionInput.value = '';
             
             try {
-                const response = await fetch(`/chat/${documentKey}`, {
+                const response = await fetch(`/chat`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
