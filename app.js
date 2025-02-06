@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
+import fetch from 'node-fetch';
 
 import express from "express";
 import multer from "multer";
@@ -151,118 +152,6 @@ app.get("/", (req, res) => {
     res.render("chat", { documentKey:documentId, fileName: "PDF Document" });
 });
 
-// app.post("/chat/:documentId", async (req, res) => {
-//     try {
-//         const { question } = req.body;
-//         const documentId = req.params.documentId;
-
-//         // Get question embedding
-//         const questionEmbedding = await getEmbeddings(question);
-
-//         // Query MongoDB for matching vectors based on cosine similarity or any other method you prefer
-//         const document = await Document.findOne({ documentId });
-
-//         if (!document) {
-//             return res.status(404).json({ error: "Document not found" });
-//         }
-
-//         // Find top 3 closest vectors (you may want to implement a more sophisticated similarity search)
-//         const matches = document.vectors
-//             .map(vector => ({
-//                 ...vector,
-//                 score: cosineSimilarity(questionEmbedding, vector.values)
-//             }))
-//             .sort((a, b) => b.score - a.score) // Sort by score (descending)
-//             .slice(0, 3); // Take top 3 matches
-
-//         // Format response context
-//         const context = matches.map(match => match.metadata.text).join("\n\n");
-
-//         // Generate response using OpenAI
-//         const completion = await openai.chat.completions.create({
-//             model: "gpt-3.5-turbo",
-//             messages: [
-//                 { role: "system", content: `You are a helpful assistant. Answer the question based on the following context:\n${context}` },
-//                 { role: "user", content: question }
-//             ]
-//         });
-
-//         res.json({
-//             answer: completion.choices[0].message.content,
-//             context: matches.map(match => ({
-//                 text: match.metadata.text,
-//                 score: match.score
-//             }))
-//         });
-//     } catch (error) {
-//         console.error("❌ Error in chat process:", error);
-//         res.status(500).json({ error: "Error processing question" });
-//     }
-// });
-
-// Cosine similarity function
-
-// app.post("/chat/:documentId", async (req, res) => {
-//     try {
-//         const { question } = req.body;
-//         const documentId ="doc_1738755985255";
-//         // const documentId = req.params.documentId;
-
-//         // Get question embedding
-//         const questionEmbedding = await getEmbeddings(question);
-
-//         // Query MongoDB for matching vectors
-//         const document = await Document.findOne({ documentId });
-
-//         if (!document) {
-//             return res.status(404).json({ error: "Document not found" });
-//         }
-
-//         // Find top 3 closest vectors with proper object structure
-//         const matches = document.vectors
-//             .map(vector => ({
-//                 id: vector.id,
-//                 values: vector.values,
-//                 metadata: vector.metadata,
-//                 score: cosineSimilarity(questionEmbedding, vector.values)
-//             }))
-//             .sort((a, b) => b.score - a.score)
-//             .slice(0, 5);
-
-//         // Safely access metadata
-//         const context = matches
-//             .map(match => match.metadata?.text || "")
-//             .filter(text => text.length > 0)
-//             .join("\n\n");
-
-//         if (!context) {
-//             return res.status(400).json({ error: "No relevant context found in the document" });
-//         }
-//         console.log("Context:", context);
-
-//         // Generate response using OpenAI
-//         const completion = await openai.chat.completions.create({
-//             model: "gpt-3.5-turbo",
-//             messages: [
-//                 { role: "system", content: `You are a helpful assistant. Answer the question based on the following context:\n${context}` },
-//                 { role: "user", content: question }
-//             ]
-//         });
-
-//         res.json({
-//             answer: completion.choices[0].message.content,
-//             context: matches.map(match => ({
-//                 text: match.metadata?.text || "",
-//                 score: match.score
-//             }))
-//         });
-//     } catch (error) {
-//         console.error("❌ Error in chat process:", error);
-//         res.status(500).json({ error: "Error processing question" });
-//     }
-// });
-
-// Modify the chat endpoint to include more context and longer responses
 app.post("/chat/:documentId", async (req, res) => {
     try {
         const { question } = req.body;
@@ -299,23 +188,39 @@ app.post("/chat/:documentId", async (req, res) => {
         }
 
         // Enhanced system prompt for longer, more detailed responses
-        const completion = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
-            messages: [
-                { 
-                    role: "system", 
-                    content: `You are a knowledgeable assistant specializing in Dr. B.R. Ambedkar's works. 
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                "HTTP-Referer": "YOUR_SITE_URL", // Replace with your site URL
+                "X-Title": "Your App Name",      // Replace with your app name
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "model": "deepseek/deepseek-r1:free",
+                "messages": [
+                    { 
+                        role: "system", 
+                        content: `You are a knowledgeable assistant specializing in Dr. B.R. Ambedkar's works. 
                     Provide detailed, thoughtful responses drawing from the context provided. 
                     Include relevant quotes when possible. Structure your responses in 2-3 clear paragraphs.
                     Ensure responses are respectful and accurately represent Dr. Ambedkar's thoughts.
                     Context:\n${context}`
-                },
-                { role: "user", content: question }
-            ],
-            temperature: 0.7,
-            max_tokens: 500  // Increased for longer responses
+                    },
+                    { role: "user", content: question }
+                ],
+                temperature: 0.2,
+                max_tokens: 1500
+            })
         });
 
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+
+        const completion = await response.json();
+
+        // Adjust response handling for OpenRouter's format
         res.json({
             answer: completion.choices[0].message.content,
             context: matches.map(match => ({
