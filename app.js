@@ -53,7 +53,7 @@ const app = express();
 
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
+app.set('views', path.join(__dirname, 'views'));
 // Function to get embeddings using OpenAI's text-embedding-3-small
 async function getEmbeddings(text) {
     try {
